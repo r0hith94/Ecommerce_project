@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}Shopping Cart - E-Commerce{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4">Shopping Cart</h2>
+    
+    {% if cart_items %}
+        <div class="row">
+            <div class="col-md-8">
+                {% for item in cart_items %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-2">
+                                {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" class="img-fluid rounded" alt="{{ item.product.name }}">
+                                {% else %}
+                                    <div class="bg-secondary rounded" style="height: 80px;"></div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <h5>{{ item.product.name }}</h5>
+                                <p class="text-muted mb-0">₹{{ item.product.price }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <form method="post" action="{% url 'cart:update_cart' item.id %}" class="d-flex align-items-center">
+                                    {% csrf_token %}
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.product.stock }}" class="form-control form-control-sm" style="width: 80px;">
+                                    <button type="submit" class="btn btn-sm btn-primary ms-2">Update</button>
+                                </form>
+                            </div>
+                            <div class="col-md-2">
+                                <h5 class="text-primary">₹{{ item.subtotal }}</h5>
+                            </div>
+                            <div class="col-md-1">
+                                <a href="{% url 'cart:remove_from_cart' item.id %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h4 class="mb-4">Cart Summary</h4>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Items:</span>
+                            <span>{{ cart_items.count }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong class="text-primary">₹{{ total }}</strong>
+                        </div>
+                        <a href="{% url 'orders:checkout' %}" class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-shopping-bag"></i> Proceed to Checkout
+                        </a>
+                        <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary w-100">
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+            <h4>Your cart is empty</h4>
+            <p>Start shopping to add items to your cart!</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-primary">
+                Browse Products
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+
+<!-- Query 16: Products Never Sold
+SELECT 
+    p.id,
+    p.name,
+    p.price,
+    p.stock
+FROM products p
+LEFT JOIN order_items oi ON oi.product_id = p.id
+WHERE oi.product_id IS NULL;
+
+Query 17: Customers With No Orders
+SELECT 
+    u.id,
+    u.username,
+    u.email
+FROM auth_user u
+LEFT JOIN orders o ON o.user_id = u.id
+WHERE o.id IS NULL;
+
+Query 18: Find the Most Frequently Ordered Product
+SELECT 
+    p.name,
+    COUNT(oi.id) AS times_ordered
+FROM products p
+JOIN order_items oi ON p.id = oi.product_id
+GROUP BY p.id
+ORDER BY times_ordered DESC
+LIMIT 1;
+
+Query 19: Revenue Per Day of the Week
+SELECT 
+    DAYNAME(created_at) AS day_name,
+    SUM(total_amount) AS revenue
+FROM orders
+WHERE status != 'cancelled'
+GROUP BY DAYOFWEEK(created_at)
+ORDER BY DAYOFWEEK(created_at);
+
+Query 20: Customers Who Spent More Than ₹50,000
+SELECT 
+    u.username,
+    u.email,
+    SUM(o.total_amount) AS total_spent
+FROM auth_user u
+JOIN orders o ON u.id = o.user_id
+WHERE o.status != 'cancelled'
+GROUP BY u.id
+HAVING total_spent > 50000;
+
+Query 21: Products With Highest Margin
+
+(Assuming you have cost_price)
+
+SELECT 
+    name,
+    price,
+    cost_price,
+    (price - cost_price) AS margin
+FROM products
+ORDER BY margin DESC;
+
+Query 22: Most Popular Category
+SELECT 
+    c.name AS category_name,
+    SUM(oi.quantity) AS units_sold
+FROM categories c
+JOIN products p ON p.category_id = c.id
+JOIN order_items oi ON oi.product_id = p.id
+GROUP BY c.id
+ORDER BY units_sold DESC
+LIMIT 1;
+
+Query 23: Average Delivery Time (Order to Delivery)
+
+(Assuming delivered_at column exists)
+
+SELECT 
+    AVG(TIMESTAMPDIFF(DAY, created_at, delivered_at)) AS avg_delivery_days
+FROM orders
+WHERE status = 'delivered';
+
+Query 24: Most Active Customers (By Login Count)
+
+(If you track login timestamps)
+
+SELECT 
+    user_id,
+    COUNT(*) AS login_count
+FROM user_logins
+GROUP BY user_id
+ORDER BY login_count DESC
+LIMIT 10;
+
+Query 25: Find Orders With More Than 3 Items
+SELECT 
+    o.id AS order_id,
+    u.username,
+    SUM(oi.quantity) AS total_items
+FROM orders o
+JOIN order_items oi ON o.id = oi.order_id
+JOIN auth_user u ON u.id = o.user_id
+GROUP BY o.id
+HAVING total_items > 3;
+
+Query 26: Stock Running Out Soon (Less Than 5 Left)
+SELECT 
+    name,
+    stock,
+    price
+FROM products
+WHERE stock < 5
+ORDER BY stock ASC;
+
+Query 27: Biggest Single Order by Quantity
+SELECT 
+    o.id AS order_id,
+    SUM(oi.quantity) AS total_items
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.id
+GROUP BY o.id
+ORDER BY total_items DESC
+LIMIT 1;
+
+Query 28: Customer With The Largest Single Purchase
+SELECT 
+    u.username,
+    o.id AS order_id,
+    o.total_amount
+FROM orders o
+JOIN auth_user u ON u.id = o.user_id
+WHERE o.status != 'cancelled'
+ORDER BY o.total_amount DESC
+LIMIT 1;
+
+Query 29: Products With Price Above Category Average
+SELECT 
+    p.name,
+    p.price,
+    c.name AS category
+FROM products p
+JOIN categories c ON p.category_id = c.id
+JOIN (
+    SELECT category_id, AVG(price) AS avg_price
+    FROM products
+    GROUP BY category_id
+) x ON x.category_id = p.category_id
+WHERE p.price > x.avg_price;
+
+Query 30: Peak Ordering Hour (Most Orders by Hour of Day)
+SELECT 
+    HOUR(created_at) AS hour_of_day,
+    COUNT(*) AS order_count
+FROM orders
+WHERE status != 'cancelled'
+GROUP BY HOUR(created_at)
+ORDER BY order_count DESC
+LIMIT 1; -->

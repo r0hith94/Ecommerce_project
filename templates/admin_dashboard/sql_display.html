@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Raw SQL Queries - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-database"></i> Raw SQL Query Demonstrations</h2>
+            <p class="text-muted">Showing actual MySQL queries executed</p>
+        </div>
+        <div class="col text-end">
+            <a href="{% url 'products:sales_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Query 1: Top Products -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-2"><i class="fas fa-code"></i> Query 1: Top Selling Products</h5>
+            <pre class="mb-0 text-white"><code>SELECT 
+    p.name as product_name,
+    c.name as category_name,
+    SUM(oi.quantity) as total_sold,
+    SUM(oi.quantity * oi.product_price) as revenue
+FROM order_items oi
+INNER JOIN products p ON oi.product_id = p.id
+INNER JOIN categories c ON p.category_id = c.id
+GROUP BY p.id, c.id
+ORDER BY revenue DESC
+LIMIT 10;</code></pre>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Total Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in top_products_sql %}
+                    <tr>
+                        <td>{{ row.0 }}</td>
+                        <td><span class="badge bg-info">{{ row.1 }}</span></td>
+                        <td><strong>{{ row.2 }} units</strong></td>
+                        <td class="text-success"><strong>₹{{ row.3|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <small class="text-muted">
+                <strong>Concepts:</strong> INNER JOIN, GROUP BY, SUM(), Aggregate Functions, ORDER BY, LIMIT
+            </small>
+        </div>
+    </div>
+
+    <!-- Query 2: Top Customers -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-2"><i class="fas fa-code"></i> Query 2: Top Customers by Spending</h5>
+            <pre class="mb-0 text-white"><code>SELECT 
+    u.username,
+    u.email,
+    COUNT(o.id) as total_orders,
+    SUM(o.total_amount) as total_spent
+FROM auth_user u
+INNER JOIN orders o ON u.id = o.user_id
+WHERE o.status != 'cancelled'
+GROUP BY u.id
+ORDER BY total_spent DESC
+LIMIT 10;</code></pre>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Total Orders</th>
+                        <th>Total Spent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in top_customers_sql %}
+                    <tr>
+                        <td><i class="fas fa-user"></i> {{ row.0 }}</td>
+                        <td>{{ row.1 }}</td>
+                        <td><span class="badge bg-primary">{{ row.2 }}</span></td>
+                        <td class="text-success"><strong>₹{{ row.3|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <small class="text-muted">
+                <strong>Concepts:</strong> Multiple JOINs, WHERE clause, GROUP BY, COUNT(), SUM()
+            </small>
+        </div>
+    </div>
+
+    <!-- Query 3: Low Stock Alert -->
+    <div class="card shadow mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-2"><i class="fas fa-code"></i> Query 3: Low Stock Products</h5>
+            <pre class="mb-0 text-white"><code>SELECT 
+    name,
+    stock,
+    price,
+    (stock * price) as inventory_value
+FROM products
+WHERE stock < 10 AND is_active = 1
+ORDER BY stock ASC;</code></pre>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Stock</th>
+                        <th>Price</th>
+                        <th>Inventory Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in low_stock_sql %}
+                    <tr>
+                        <td>{{ row.0 }}</td>
+                        <td><span class="badge bg-danger">{{ row.1 }} left</span></td>
+                        <td>₹{{ row.2 }}</td>
+                        <td>₹{{ row.3|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-success">
+                            <i class="fas fa-check-circle"></i> All products have sufficient stock
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <small class="text-muted">
+                <strong>Concepts:</strong> WHERE clause with AND, Calculated columns, ORDER BY
+            </small>
+        </div>
+    </div>
+
+    <!-- Query 4: Daily Sales -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-2"><i class="fas fa-code"></i> Query 4: Daily Sales (Last 7 Days)</h5>
+            <pre class="mb-0 text-white"><code>SELECT 
+    DATE(created_at) as order_date,
+    COUNT(*) as order_count,
+    SUM(total_amount) as daily_revenue
+FROM orders
+WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+GROUP BY DATE(created_at)
+ORDER BY order_date DESC;</code></pre>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Order Count</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in daily_sales_sql %}
+                    <tr>
+                        <td><i class="fas fa-calendar"></i> {{ row.0 }}</td>
+                        <td><span class="badge bg-primary">{{ row.1 }} orders</span></td>
+                        <td class="text-success"><strong>₹{{ row.2|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No sales in last 7 days</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <small class="text-muted">
+                <strong>Concepts:</strong> DATE functions, DATE_SUB(), INTERVAL, GROUP BY date, WHERE with date range
+            </small>
+        </div>
+    </div>
+
+    <!-- SQL Concepts Summary -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> SQL Concepts Demonstrated</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Basic SQL:</h6>
+                    <ul>
+                        <li>SELECT statements</li>
+                        <li>WHERE clauses</li>
+                        <li>ORDER BY</li>
+                        <li>LIMIT</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Advanced SQL:</h6>
+                    <ul>
+                        <li>INNER JOIN (multiple tables)</li>
+                        <li>GROUP BY</li>
+                        <li>Aggregate Functions (SUM, COUNT, AVG)</li>
+                        <li>Date Functions (DATE, DATE_SUB, CURDATE)</li>
+                        <li>Calculated Columns</li>
+                        <li>Subqueries potential</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

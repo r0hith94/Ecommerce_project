@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - E-Commerce Store{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <!-- Product Image -->
+        <div class="col-md-6">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" class="img-fluid rounded shadow" alt="{{ product.name }}">
+            {% else %}
+                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+                    <i class="fas fa-image fa-5x text-white"></i>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'products:home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
+                    <li class="breadcrumb-item active">{{ product.name }}</li>
+                </ol>
+            </nav>
+            
+            <h2 class="mb-3">{{ product.name }}</h2>
+            
+            <div class="mb-3">
+                <span class="badge bg-info">{{ product.category.name }}</span>
+                {% if product.is_in_stock %}
+                    <span class="badge bg-success">In Stock ({{ product.stock }} available)</span>
+                {% else %}
+                    <span class="badge bg-danger">Out of Stock</span>
+                {% endif %}
+            </div>
+            
+            <h3 class="text-primary mb-4">₹{{ product.price }}</h3>
+            
+            <div class="mb-4">
+                <h5>Description:</h5>
+                <p class="text-muted">{{ product.description }}</p>
+            </div>
+            
+            {% if user.is_authenticated %}
+                {% if product.is_in_stock %}
+                    <form method="post" action="{% url 'cart:add_to_cart' product.id %}">
+                        {% csrf_token %}
+                        <div class="input-group mb-3" style="max-width: 200px;">
+                            <label class="input-group-text">Quantity</label>
+                            <input type="number" class="form-control" name="quantity" value="1" min="1" max="{{ product.stock }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </form>
+                {% else %}
+                    <button class="btn btn-secondary btn-lg" disabled>
+                        <i class="fas fa-times"></i> Out of Stock
+                    </button>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 
+                    Please <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="alert-link">login</a> to add items to cart.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="mt-5">
+        <h3 class="mb-4">Related Products</h3>
+        <div class="row">
+            {% for product in related_products %}
+            <div class="col-md-3 mb-4">
+                <div class="card product-card shadow-sm h-100">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="card-img-top product-image bg-secondary d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image fa-3x text-white"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h6 class="card-title">{{ product.name|truncatewords:5 }}</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="text-primary mb-0">₹{{ product.price }}</h5>
+                        </div>
+                        <a href="{% url 'products:product_detail' product.slug %}" class="btn btn-primary btn-sm w-100 mt-3">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

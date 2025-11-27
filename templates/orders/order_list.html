@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders - E-Commerce{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4">My Orders</h2>
+    
+    {% if orders %}
+        {% for order in orders %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <strong>Order #{{ order.order_number }}</strong>
+                        <p class="text-muted mb-0">{{ order.created_at|date:"F d, Y" }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <strong>₹{{ order.total_amount }}</strong>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted">{{ order.item_count }} items</small>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-sm btn-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-box fa-3x mb-3"></i>
+            <h4>No orders yet</h4>
+            <p>Start shopping to place your first order!</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-primary">
+                Browse Products
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+
+
+
+ <!-- Query 5: Most Frequently Ordered Categories
+SELECT 
+    c.name AS category_name,
+    SUM(oi.quantity) AS total_sold,
+    SUM(oi.quantity * oi.product_price) AS revenue
+FROM order_items oi
+INNER JOIN products p ON oi.product_id = p.id
+INNER JOIN categories c ON p.category_id = c.id
+GROUP BY c.id
+ORDER BY total_sold DESC;
+
+
+Concepts: GROUP BY, JOIN, SUM()
+
+🟩 Query 6: Products That Are Active but Never Sold
+SELECT 
+    p.id,
+    p.name,
+    p.price,
+    p.stock
+FROM products p
+LEFT JOIN order_items oi ON p.id = oi.product_id
+WHERE oi.product_id IS NULL
+AND p.is_active = 1;
+
+
+Concepts: LEFT JOIN, NULL check
+
+🟧 Query 7: Most Valuable Customers (based on order count × avg order value)
+SELECT 
+    u.username,
+    u.email,
+    COUNT(o.id) AS total_orders,
+    SUM(o.total_amount) AS total_spent,
+    AVG(o.total_amount) AS avg_order_value
+FROM auth_user u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE o.status != 'cancelled'
+GROUP BY u.id
+ORDER BY avg_order_value DESC
+LIMIT 10;
+
+
+Concepts: GROUP BY, SUM, AVG, ORDER BY
+
+🟥 Query 8: Products With Highest Inventory Value
+SELECT 
+    p.name,
+    p.stock,
+    p.price,
+    (p.stock * p.price) AS inventory_value
+FROM products p
+WHERE p.is_active = 1
+ORDER BY inventory_value DESC
+LIMIT 10;
+
+
+Concepts: Calculated columns
+
+🟪 Query 9: Daily Order Count & Average Order Value
+SELECT 
+    DATE(o.created_at) AS order_date,
+    COUNT(*) AS order_count,
+    AVG(o.total_amount) AS avg_order_value
+FROM orders o
+GROUP BY DATE(o.created_at)
+ORDER BY order_date DESC
+LIMIT 7;
+
+
+Concepts: DATE(), AVG(), GROUP BY
+
+🟫 Query 10: Orders With At Least One Expensive Product (> ₹50,000)
+SELECT 
+    o.id AS order_id,
+    o.user_id,
+    o.total_amount,
+    MAX(oi.product_price) AS costliest_item
+FROM orders o
+INNER JOIN order_items oi ON o.id = oi.order_id
+GROUP BY o.id
+HAVING costliest_item > 50000;
+
+
+Concepts: GROUP BY + HAVING
+
+⬛ Query 11: Average Spending Per User (Only Users Who Ordered)
+SELECT 
+    u.username,
+    COUNT(o.id) AS orders_count,
+    SUM(o.total_amount) AS total_spent,
+    SUM(o.total_amount) / COUNT(o.id) AS avg_spent_per_order
+FROM auth_user u
+INNER JOIN orders o ON u.id = o.user_id
+WHERE o.status != 'cancelled'
+GROUP BY u.id
+ORDER BY avg_spent_per_order DESC;
+
+
+Concepts: division inside SELECT
+
+🟨 Query 12: Top 5 Products With Highest Cancelled Order Loss
+SELECT 
+    p.name,
+    SUM(oi.quantity * oi.product_price) AS cancelled_loss
+FROM orders o
+INNER JOIN order_items oi ON o.id = oi.order_id
+INNER JOIN products p ON oi.product_id = p.id
+WHERE o.status = 'cancelled'
+GROUP BY p.id
+ORDER BY cancelled_loss DESC
+LIMIT 5; -->

@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - E-Commerce{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Login</h2>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" id="id_username" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" id="id_password" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <p class="text-center mb-0">
+                        Don't have an account? <a href="{% url 'accounts:signup' %}">Sign Up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Query 5: Revenue by Category
+SELECT 
+    c.name AS category_name,
+    COUNT(p.id) AS total_products,
+    SUM(oi.quantity) AS total_units_sold,
+    SUM(oi.quantity * oi.product_price) AS category_revenue
+FROM categories c
+LEFT JOIN products p ON p.category_id = c.id
+LEFT JOIN order_items oi ON oi.product_id = p.id
+GROUP BY c.id
+ORDER BY category_revenue DESC;
+
+Query 6: Most Cancelled / Returned Orders
+SELECT 
+    status,
+    COUNT(*) AS count_status,
+    SUM(total_amount) AS total_loss
+FROM orders
+WHERE status IN ('cancelled', 'returned')
+GROUP BY status
+ORDER BY count_status DESC;
+
+Query 7: Most Purchased Brands
+SELECT 
+    p.name AS brand,
+    SUM(oi.quantity) AS units_sold
+FROM order_items oi
+INNER JOIN products p ON oi.product_id = p.id
+GROUP BY p.name
+ORDER BY units_sold DESC;
+
+Query 8: Average Order Value (AOV)
+SELECT 
+    ROUND(AVG(total_amount), 2) AS avg_order_value,
+    COUNT(*) AS total_orders
+FROM orders
+WHERE status != 'cancelled';
+
+Query 9: Customers Who Bought the Most Items
+SELECT 
+    u.username,
+    SUM(oi.quantity) AS items_bought
+FROM auth_user u
+INNER JOIN orders o ON u.id = o.user_id
+INNER JOIN order_items oi ON o.id = oi.order_id
+GROUP BY u.id
+ORDER BY items_bought DESC;
+
+Query 10: Highest Value Orders
+SELECT 
+    id AS order_id,
+    user_id,
+    total_amount,
+    created_at
+FROM orders
+WHERE status != 'cancelled'
+ORDER BY total_amount DESC
+LIMIT 5;
+
+Query 11: Product Inventory Value Ranking
+SELECT 
+    name,
+    stock,
+    price,
+    (stock * price) AS inventory_value
+FROM products
+ORDER BY inventory_value DESC;
+
+Query 12: Repeat Customers (More Than 1 Order)
+SELECT 
+    u.username,
+    COUNT(o.id) AS total_orders
+FROM auth_user u
+INNER JOIN orders o ON u.id = o.user_id
+GROUP BY u.id
+HAVING COUNT(o.id) > 1;
+
+Query 13: Most Profitable Products
+SELECT 
+    p.name,
+    (oi.product_price - p.cost_price) AS profit_per_unit,
+    SUM(oi.quantity) AS units_sold,
+    SUM((oi.product_price - p.cost_price) * oi.quantity) AS total_profit
+FROM order_items oi
+INNER JOIN products p ON oi.product_id = p.id
+GROUP BY p.id
+ORDER BY total_profit DESC;
+
+Query 14: Orders Per Category
+SELECT 
+    c.name AS category,
+    COUNT(o.id) AS total_orders
+FROM categories c
+LEFT JOIN products p ON p.category_id = c.id
+LEFT JOIN order_items oi ON oi.product_id = p.id
+LEFT JOIN orders o ON o.id = oi.order_id
+GROUP BY c.id
+ORDER BY total_orders DESC;
+
+Query 15: Monthly Revenue Trend
+SELECT 
+    DATE_FORMAT(created_at, '%Y-%m') AS month,
+    SUM(total_amount) AS monthly_revenue
+FROM orders
+WHERE status != 'cancelled'
+GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+ORDER BY month DESC;
+  -->
